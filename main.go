@@ -124,11 +124,61 @@ blogimport = true {{ with .Extra }}
 	uri = "{{ .Author.Uri }}"
 
 +++
+{{ .Content }}
+`
+
+var yamlTempl = `---
+title: "{{ .Title }}"
+date: {{ .Published }}
+updated: {{ .Updated }}{{ with .Tags.TomlString }}
+tags: [{{ . }}]{{ end }}{{ if .Draft }}
+draft: true{{ end }}
+blogimport: true {{ with .Extra }}
+{{.}}{{ end }}
+author: "{{ .Author.Name }}"
+---
 
 {{ .Content }}
 `
 
-var t = template.Must(template.New("").Parse(templ))
+var t = template.Must(template.New("").Parse(yamlTempl))
+
+var comtemplate = `id = "{{ .ID }}"
+date = {{ .Published }}
+updated = {{ .Updated }}
+title = '''{{ .Title }}'''
+content = '''{{ .Content }}'''{{ with .Reply }}
+reply = {{.}}{{end}}
+[author]
+	name = "{{ .Author.Name }}"
+	uri = "{{ .Author.Uri }}"
+[author.image]
+	source = "{{ .Author.Image.Source }}"
+	width = "{{ .Author.Image.Width }}"
+	height = "{{ .Author.Image.Height }}"
+`
+
+var ct = template.Must(template.New("").Parse(comtemplate))
+var exp = Export{}
+
+func (s EntrySet) Len() int {
+	return len(s)
+}
+func (s EntrySet) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+func (s EntrySet) Less(i, j int) bool {
+	return time.Time(exp.Entries[s[i]].Published).Before(time.Time(exp.Entries[s[j]].Published))
+}
+
+func treeSort(i int) (list []int) {
+	sort.Sort(EntrySet(exp.Entries[i].Children))
+	for _, v := range exp.Entries[i].Children {
+		list = append(list, v)
+		list = append(list, treeSort(v)...)
+	}
+	return
+}
 
 var comtemplate = `id = "{{ .ID }}"
 date = {{ .Published }}
@@ -185,6 +235,7 @@ func main() {
 	dir := args[1]
 
 	info, err := os.Stat(dir)
+
 	if os.IsNotExist(err) {
 		err = os.MkdirAll(path.Join(dir, "comments"), 0755)
 	}

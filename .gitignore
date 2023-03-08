@@ -21,6 +21,8 @@ _testmain.go
 
 *.exe
 *.test
+/main
+.DS_Store
 
 # Test output
 **/user-test*/*
