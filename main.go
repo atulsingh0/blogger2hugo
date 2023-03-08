@@ -122,6 +122,7 @@ blogimport = true {{ with .Extra }}
 [author]
 	name = "{{ .Author.Name }}"
 	uri = "{{ .Author.Uri }}"
+
 +++
 {{ .Content }}
 `
@@ -141,6 +142,43 @@ author: "{{ .Author.Name }}"
 `
 
 var t = template.Must(template.New("").Parse(yamlTempl))
+
+var comtemplate = `id = "{{ .ID }}"
+date = {{ .Published }}
+updated = {{ .Updated }}
+title = '''{{ .Title }}'''
+content = '''{{ .Content }}'''{{ with .Reply }}
+reply = {{.}}{{end}}
+[author]
+	name = "{{ .Author.Name }}"
+	uri = "{{ .Author.Uri }}"
+[author.image]
+	source = "{{ .Author.Image.Source }}"
+	width = "{{ .Author.Image.Width }}"
+	height = "{{ .Author.Image.Height }}"
+`
+
+var ct = template.Must(template.New("").Parse(comtemplate))
+var exp = Export{}
+
+func (s EntrySet) Len() int {
+	return len(s)
+}
+func (s EntrySet) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+func (s EntrySet) Less(i, j int) bool {
+	return time.Time(exp.Entries[s[i]].Published).Before(time.Time(exp.Entries[s[j]].Published))
+}
+
+func treeSort(i int) (list []int) {
+	sort.Sort(EntrySet(exp.Entries[i].Children))
+	for _, v := range exp.Entries[i].Children {
+		list = append(list, v)
+		list = append(list, treeSort(v)...)
+	}
+	return
+}
 
 var comtemplate = `id = "{{ .ID }}"
 date = {{ .Published }}
