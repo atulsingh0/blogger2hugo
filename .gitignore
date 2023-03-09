@@ -27,3 +27,7 @@ _testmain.go
 # Test output
 **/user-test*/*
 **/out*/
+
+# Binary
+target/
+test-output/
