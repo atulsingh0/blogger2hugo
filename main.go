@@ -109,7 +109,7 @@ func (t Tags) TomlString() string {
 	return strings.Join(names, ", ")
 }
 
-var templ = `+++
+var tomlTempl = `+++
 title = "{{ .Title }}"{{ if not (eq .Title .Slug) }}
 slug = "{{ .Slug }}"{{end}}
 date = {{ .Published }}
@@ -122,6 +122,10 @@ blogimport = true {{ with .Extra }}
 [author]
 	name = "{{ .Author.Name }}"
 	uri = "{{ .Author.Uri }}"
+[author.image]
+	source = "{{ .Author.Image.Source }}"
+	width = "{{ .Author.Image.Width }}"
+	height = "{{ .Author.Image.Height }}"
 
 +++
 {{ .Content }}
@@ -142,23 +146,6 @@ author: "{{ .Author.Name }}"
 `
 
 var t = template.Must(template.New("").Parse(yamlTempl))
-
-var comtemplate = `id = "{{ .ID }}"
-date = {{ .Published }}
-updated = {{ .Updated }}
-title = '''{{ .Title }}'''
-content = '''{{ .Content }}'''{{ with .Reply }}
-reply = {{.}}{{end}}
-[author]
-	name = "{{ .Author.Name }}"
-	uri = "{{ .Author.Uri }}"
-[author.image]
-	source = "{{ .Author.Image.Source }}"
-	width = "{{ .Author.Image.Width }}"
-	height = "{{ .Author.Image.Height }}"
-`
-
-var ct = template.Must(template.New("").Parse(comtemplate))
 var exp = Export{}
 
 func (s EntrySet) Len() int {
@@ -183,7 +170,7 @@ func treeSort(i int) (list []int) {
 func main() {
 	log.SetFlags(0)
 
-	extra := flag.String("extra", "", "additional metadata to set in frontmatter")
+	var extra = flag.String("extra", "", "additional metadata to set in frontmatter")
 	flag.Parse()
 
 	args := flag.Args()
@@ -349,7 +336,7 @@ func writeComment(e Entry, dir string) error {
 	}
 	defer f.Close()
 
-	return ct.Execute(f, e)
+	return t.Execute(f, e)
 }
 
 // Take a string with any characters and replace it so the string could be used in a path.
